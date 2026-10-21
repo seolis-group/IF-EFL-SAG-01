@@ -1,0 +1,234 @@
+{
+  "interface_id": "IF-EFL-SAG-01",
+  "efluid": {
+    "encoding": "ascii",
+    "minimum_line_length": 1244,
+    "currency": "EUR",
+    "amount_implied_decimals": 2,
+    "layout": {
+      "batch_number": {
+        "zone": 1,
+        "start": 1,
+        "length": 25
+      },
+      "journal": {
+        "zone": 3,
+        "start": 51,
+        "length": 25
+      },
+      "transaction_type": {
+        "zone": 4,
+        "start": 76,
+        "length": 2
+      },
+      "company": {
+        "zone": 5,
+        "start": 78,
+        "length": 25
+      },
+      "account": {
+        "zone": 6,
+        "start": 103,
+        "length": 25
+      },
+      "ana1": {
+        "zone": 7,
+        "start": 128,
+        "length": 25
+      },
+      "ana2": {
+        "zone": 8,
+        "start": 153,
+        "length": 25
+      },
+      "ana3": {
+        "zone": 9,
+        "start": 178,
+        "length": 25
+      },
+      "ana5": {
+        "zone": 11,
+        "start": 228,
+        "length": 25
+      },
+      "tax_code": {
+        "zone": 14,
+        "start": 303,
+        "length": 25
+      },
+      "currency": {
+        "zone": 16,
+        "start": 353,
+        "length": 25
+      },
+      "direction": {
+        "zone": 17,
+        "start": 378,
+        "length": 2
+      },
+      "amount": {
+        "zone": 18,
+        "start": 380,
+        "length": 20
+      },
+      "label": {
+        "zone": 21,
+        "start": 491,
+        "length": 255
+      },
+      "operation_date": {
+        "zone": 22,
+        "start": 746,
+        "length": 8
+      },
+      "cac_reference": {
+        "zone": 26,
+        "start": 783,
+        "length": 461
+      }
+    }
+  },
+  "rules": {
+    "piece_key": [
+      "company",
+      "journal",
+      "operation_date"
+    ],
+    "piece_description": "Efluid {journal} {date}",
+    "unbalanced_piece": "reject",
+    "zero_amount_line": "skip",
+    "accounting_date": "operation_date",
+    "invoice_labels": [
+      "Facturation produit"
+    ],
+    "invoice_piece_type": "FACEF",
+    "other_piece_type": "RECEF",
+    "category": "1",
+    "status": "2",
+    "rate": "1",
+    "transaction": "STDCO",
+    "partner": "HG",
+    "analytic_account_prefixes": [
+      "2",
+      "6",
+      "7"
+    ],
+    "analytic_accounts": [
+      "467510",
+      "467520",
+      "467530",
+      "443170",
+      "443175"
+    ],
+    "analytic_transco_required_prefixes": [
+      "6",
+      "7"
+    ],
+    "chantier_account_prefixes": [
+      "467"
+    ],
+    "quantity_accounts": [
+      "443170",
+      "443175"
+    ],
+    "treasury_journals": [
+      "RB",
+      "RE",
+      "RF",
+      "RI",
+      "RP",
+      "RV",
+      "RX"
+    ],
+    "treasury_untaxed_codes": [
+      "0"
+    ]
+  },
+  "transco": {
+    "source": "csv",
+    "accounts": "transco/comptes.csv",
+    "taxes": "transco/codes_taxe.csv"
+  },
+  "sage": {
+    "model": "XXXXX",
+    "delimiter": ";",
+    "encoding": "utf-8",
+    "line_ending": "CRLF",
+    "decimal_separator": ".",
+    "description_max_length": 30,
+    "origin_document_max_length": 20,
+    "free_reference_max_length": 30,
+    "axis_service": "SCE",
+    "axis_chantier": "CHA",
+    "axis_analytic": "CPA",
+    "axis_market": "MAR",
+    "fields": {
+      "G": [
+        "TYP",
+        "NUM",
+        "FCY",
+        "JOU",
+        "ACCDAT",
+        "CAT",
+        "STA",
+        "DES",
+        "BPRVCR",
+        "REF",
+        "CUR",
+        "RATMTL",
+        "DACDIA"
+      ],
+      "D": [
+        "LIN",
+        "LEDTYP",
+        "IDTLIN",
+        "FCYLIN",
+        "ACC",
+        "BPR",
+        "DES",
+        "SNS",
+        "AMTLED",
+        "AMTCUR",
+        "CSLBPR",
+        "FREREF",
+        "TAX"
+      ],
+      "A": [
+        "ANALIN",
+        "LEDTYP",
+        "FCYLIN",
+        "DIE(0)",
+        "CCE(0)",
+        "DIE(1)",
+        "CCE(1)",
+        "DIE(2)",
+        "CCE(2)",
+        "DIE(3)",
+        "CCE(3)",
+        "AMTLOC",
+        "AMTCUR",
+        "SNS",
+        "QTY"
+      ]
+    }
+  },
+  "societes": {
+    "GEREDIS": {
+      "file_pattern": "^GEREDISCG(?P<accounting_date>\\d{6})_(?P<generated_at>\\d{8}-\\d{6})\\.txt$",
+      "company_code": "GE"
+    },
+    "SELIA": {
+      "file_pattern": "^SELIACG(?P<accounting_date>\\d{6})_(?P<generated_at>\\d{8}-\\d{6})\\.txt$",
+      "company_code": "SA"
+    },
+    "SEOLIS": {
+      "file_pattern": "^SEOLISCG(?P<accounting_date>\\d{6})_(?P<generated_at>\\d{8}-\\d{6})\\.txt$",
+      "company_code": "SO"
+    },
+    "SEOLISHA": {
+      "file_pattern": "^SEOLISHACG(?P<accounting_date>\\d{6})_(?P<generated_at>\\d{8}-\\d{6})\\.txt$",
+      "company_code": "SO",
+      "transco_societe": "SEOLIS"
+    }
+  }
+}
