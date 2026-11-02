@@ -17,3 +17,6 @@ venv/
 
 # Donnees de test locales (extraits PRESTO reels, sorties, logs)
 test-local/
+
+# Sorties de test local
+test-local/

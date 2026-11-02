@@ -150,11 +150,11 @@
     "taxes": "transco/codes_taxe.csv"
   },
   "sage": {
-    "model": "XXXXX",
+    "model": "EFLUID",
     "delimiter": ";",
-    "encoding": "utf-8",
+    "encoding": "iso-8859-1",
     "line_ending": "CRLF",
-    "decimal_separator": ".",
+    "decimal_separator": ",",
     "description_max_length": 30,
     "origin_document_max_length": 20,
     "free_reference_max_length": 30,
@@ -171,17 +171,16 @@
         "ACCDAT",
         "CAT",
         "STA",
-        "DES",
+        "DESVCR",
         "BPRVCR",
         "REF",
         "CUR",
-        "RATMTL",
+        "RATMLT",
         "DACDIA"
       ],
       "D": [
         "LIN",
         "LEDTYP",
-        "IDTLIN",
         "FCYLIN",
         "ACC",
         "BPR",
@@ -191,6 +190,7 @@
         "AMTCUR",
         "CSLBPR",
         "FREREF",
+        "YREFEFLUID",
         "TAX"
       ],
       "A": [
@@ -205,10 +205,10 @@
         "CCE(2)",
         "DIE(3)",
         "CCE(3)",
-        "AMTLOC",
+        "AMTLED",
         "AMTCUR",
-        "SNS",
-        "QTY"
+        "QTY",
+        "SNS"
       ]
     }
   },

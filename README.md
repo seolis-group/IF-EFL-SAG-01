@@ -2,12 +2,11 @@
 
 > Batch unique des quatre sociétés Efluid (GEREDIS, SELIA, SEOLIS, SEOLISHA),
 > décidé en atelier le 21/10/2026. Il remplace les anciennes interfaces
-> IF-EFL-SAG-01 à 04, archivées dans `BATCHS/_archives/`, et produit les mêmes
-> fichiers, à l'octet près, sur les exemples Efluid du 29/04/2026.
+> IF-EFL-SAG-01 à 04, archivées dans `BATCHS/_archives/`. Depuis le 02/11/2026,
+> la sortie suit le modèle d'import `EFLUID` créé par Inetum dans Sage X3.
 
 Ce projet autonome transforme les fichiers IC Efluid quotidiens de chaque société
-en fichiers d'import des pièces comptables Sage X3 (modèle `XXXXX`, nom à
-confirmer par Inetum). Un seul code et une seule configuration servent toutes
+en fichiers d'import des pièces comptables Sage X3 (modèle `EFLUID`). Un seul code et une seule configuration servent toutes
 les sociétés. Il a été créé à partir du starter kit SEOLIS et n'utilise que la
 bibliothèque standard Python.
 
@@ -96,29 +95,33 @@ transcodification, sans modifier le code.
 
 ## Structure Sage X3 produite
 
-Structure conforme à la matrice d'interface (onglet *Matrice*) et au fichier type
-Sage de l'onglet *Notice technique* :
+Structure conforme au modèle d'import `EFLUID` paramétré par Inetum dans Sage X3
+(objet `GAS`, fonction `GESGAS`, 44 champs ; relevé le 02/11/2026). Le champ `/` en
+tête de chaque niveau du modèle correspond à l'indicateur G, D ou A :
 
 ```text
-G;TYP;NUM;FCY;JOU;ACCDAT;CAT;STA;DES;BPRVCR;REF;CUR;RATMTL;DACDIA
-D;LIN;LEDTYP;IDTLIN;FCYLIN;ACC;BPR;DES;SNS;AMTLED;AMTCUR;CSLBPR;FREREF;TAX
-A;ANALIN;LEDTYP;FCYLIN;DIE(0);CCE(0);DIE(1);CCE(1);DIE(2);CCE(2);DIE(3);CCE(3);AMTLOC;AMTCUR;SNS;QTY
+G;TYP;NUM;FCY;JOU;ACCDAT;CAT;STA;DESVCR;BPRVCR;REF;CUR;RATMLT;DACDIA
+D;LIN;LEDTYP;FCYLIN;ACC;BPR;DES;SNS;AMTLED;AMTCUR;CSLBPR;FREREF;YREFEFLUID;TAX
+A;ANALIN;LEDTYP;FCYLIN;DIE(0);CCE(0);DIE(1);CCE(1);DIE(2);CCE(2);DIE(3);CCE(3);AMTLED;AMTCUR;QTY;SNS
 ```
+
+Paramètres du modèle : fichier à séparateur d'enregistrement, séparateur de champ
+`;`, fin d'enregistrement CRLF (`\013\010`), jeu de caractères ISO-8859-1,
+séparateur décimal `,`, dates `AAAAMMJJ`.
 
 Exemple :
 
 ```text
 G;FACEF;;GE;VE;20260429;1;2;Efluid VE 29/04/2026;CG260429;;EUR;1;STDCO
-D;1;1;1;GE;411110;;Facturation produit;1;120.00;120.00;HG;CG260429;004
-D;2;1;2;GE;706100;;Facturation produit;-1;120.00;120.00;HG;CG260429;001
-D;2;2;2;GE;706100;;Facturation produit;-1;120.00;120.00;;CG260429;
-A;1;2;GE;SCE;620;CHA;;CPA;9301101;MAR;;120.00;120.00;-1;
+D;1;1;GE;411110;;Facturation produit;1;120,00;120,00;HG;CG260429;CG260429;004
+D;2;1;GE;706100;;Facturation produit;-1;120,00;120,00;HG;CG260429;CG260429;001
+D;2;2;GE;706100;;Facturation produit;-1;120,00;120,00;;CG260429;CG260429;
+A;1;2;GE;SCE;620;CHA;;CPA;9301101;MAR;;120,00;120,00;;-1
 ```
 
 L'ordre des champs de chaque enregistrement est paramétré dans
 `config/if_efl_sag_01.json` (`sage.fields`) et peut être aligné sur le modèle
-définitif sans modifier le code. `QTY` est placé provisoirement en fin de
-ligne A, en attendant l'ordre définitif du modèle d'import.
+définitif sans modifier le code.
 
 ## Règles appliquées
 
@@ -134,14 +137,16 @@ Règles validées en atelier le 21/10/2026, sauf mention contraire.
   pièce incomplète à Sage.
 - **TYP** : `FACEF` si toutes les lignes de la pièce ont le libellé
   « Facturation produit », sinon `RECEF`.
-- **DES** (en-tête) : `rules.piece_description`, soit « Efluid <journal>
+- **DESVCR** (en-tête) : `rules.piece_description`, soit « Efluid <journal>
   <JJ/MM/AAAA> ». Chaque ligne D garde son libellé Efluid (zone 21).
 - **ACCDAT** : date d'opération Efluid (zone 22). Valeur `run_date` possible
   pour utiliser la date du jour d'intégration.
-- **Référence CAC** (zone 26, `CGAAMMJJ`) : dans `FREREF` sur toutes les lignes D,
-  et en document origine `BPRVCR` sur l'en-tête (report en en-tête à confirmer).
+- **Référence CAC** (zone 26, `CGAAMMJJ`) : dans le champ spécifique `YREFEFLUID`
+  (« Code Efluid », ligne « Réf EFLUID » de la matrice Inetum) et dans `FREREF`
+  sur toutes les lignes D, et en document origine `BPRVCR` sur l'en-tête (report
+  en en-tête et doublon `FREREF` à confirmer).
 - **Montants** : valeur absolue de la zone 18 convertie des centimes en décimal
-  (`105103` → `1051.03`), sens porté par `SNS` (zone 17 : 1 / -1). Un signe
+  (`105103` → `1051,03`), sens porté par `SNS` (zone 17 : 1 / -1). Un signe
   incohérent avec le flag est rejeté.
 - **Montant nul** : la ligne est ignorée et signalée (code retour 1).
 - **ACC** : compte Agresso (zone 6) transcodifié via `transco/comptes.csv`.
@@ -159,10 +164,10 @@ Règles validées en atelier le 21/10/2026, sauf mention contraire.
   (`0` → `004`). Sur les journaux de trésorerie (`rules.treasury_journals` :
   RB, RE, RF, RI, RP, RV, RX), le code `0` donne un code taxe vide ; les autres
   codes restent transcodifiés.
-- **Constantes** : `CAT` 1, `STA` 2 (pièce réelle), `CUR` EUR, `RATMTL` 1,
+- **Constantes** : `CAT` 1, `STA` 2 (pièce réelle), `CUR` EUR, `RATMLT` 1,
   `DACDIA` STDCO, `CSLBPR` HG ; libellés tronqués à 30 caractères.
-- **Sortie** : UTF-8, séparateur `;`, fins de ligne CRLF, point décimal
-  (identique aux interfaces PRESTO).
+- **Sortie** : ISO-8859-1, séparateur `;`, fins de ligne CRLF, virgule décimale,
+  comme le paramètre le modèle `EFLUID` (`sage.encoding`, `sage.decimal_separator`).
 
 ## Transcodification
 
@@ -191,9 +196,8 @@ Le test sur fichier réel utilise `../../EFluid_output_examples` s'il est prése
 
 ## Points à confirmer
 
-- nom du modèle d'import Sage X3 (`sage.model` = `XXXXX`) et ordre exact des
-  champs, dont la place de `QTY` (Inetum) ;
-- report de la référence CAC en en-tête (`BPRVCR`) en plus de `FREREF` ;
+- report de la référence CAC en en-tête (`BPRVCR`), et maintien dans `FREREF`
+  maintenant que `YREFEFLUID` la porte ;
 - GEREDIS : 704313 / RAC / 9810103 et 704533 / PRE / 9352302 sans section
   service ni compte analytique Sage dans le classeur (pièce VE rejetée) ;
 - liste complète des comptes ouverts à la quantité ;

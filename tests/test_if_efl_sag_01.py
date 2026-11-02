@@ -71,10 +71,10 @@ class TransformTests(unittest.TestCase):
         self.assertEqual(rejected, [])
         self.assertEqual(output, [
             f"G;FACEF;;{COMPANY};VE;20260429;1;2;Efluid VE 29/04/2026;CG260429;;EUR;1;STDCO",
-            f"D;1;1;1;{COMPANY};411110;;Facturation produit;1;120.00;120.00;HG;CG260429;004",
-            f"D;2;1;2;{COMPANY};706100;;Facturation produit;-1;120.00;120.00;HG;CG260429;001",
-            f"D;2;2;2;{COMPANY};706100;;Facturation produit;-1;120.00;120.00;;CG260429;",
-            f"A;1;2;{COMPANY};SCE;620;CHA;;CPA;9301101;MAR;;120.00;120.00;-1;",
+            f"D;1;1;{COMPANY};411110;;Facturation produit;1;120,00;120,00;HG;CG260429;CG260429;004",
+            f"D;2;1;{COMPANY};706100;;Facturation produit;-1;120,00;120,00;HG;CG260429;CG260429;001",
+            f"D;2;2;{COMPANY};706100;;Facturation produit;-1;120,00;120,00;;CG260429;CG260429;",
+            f"A;1;2;{COMPANY};SCE;620;CHA;;CPA;9301101;MAR;;120,00;120,00;;-1",
         ])
         self.assertEqual((stats.pieces_written, stats.debit_cents, stats.credit_cents), (1, 12000, 12000))
 
@@ -86,7 +86,7 @@ class TransformTests(unittest.TestCase):
         self.assertEqual(rejected, [])
         self.assertTrue(output[0].startswith("G;RECEF;"))
         self.assertIn(";757000;", output[2])
-        self.assertEqual(output[4], f"A;1;2;{COMPANY};SCE;899;CHA;;CPA;9411000;MAR;;5.00;5.00;-1;")
+        self.assertEqual(output[4], f"A;1;2;{COMPANY};SCE;899;CHA;;CPA;9411000;MAR;;5,00;5,00;;-1")
 
     def test_chantier_section_for_467_accounts(self) -> None:
         output, rejected, _ = run([
@@ -94,7 +94,7 @@ class TransformTests(unittest.TestCase):
             efluid_line(journal="RE", label="Encaissement", account="467510", ana2="20065502", direction="1", amount="300"),
         ])
         self.assertEqual(rejected, [])
-        self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;;CHA;20065502;CPA;;MAR;;3.00;3.00;1;")
+        self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;;CHA;20065502;CPA;;MAR;;3,00;3,00;;1")
 
     def test_quantity_for_accounts_open_to_quantity(self) -> None:
         output, rejected, _ = run([
@@ -102,7 +102,7 @@ class TransformTests(unittest.TestCase):
             efluid_line(journal="RE", label="Encaissement", account="443170", ana2="1250", direction="1", amount="300"),
         ])
         self.assertEqual(rejected, [])
-        self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;;CHA;;CPA;;MAR;;3.00;3.00;1;1250")
+        self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;;CHA;;CPA;;MAR;;3,00;3,00;1250;1")
 
     def test_treasury_lines_have_no_tax_for_code_zero(self) -> None:
         output, rejected, _ = run([
@@ -148,7 +148,7 @@ class TransformTests(unittest.TestCase):
         self.assertEqual((rejected, stats.pieces_written), ([], 2))
         headers = [line.split(";") for line in output if line.startswith("G;")]
         self.assertEqual([(h[4], h[8]) for h in headers], [("RE", "Efluid RE 29/04/2026"), ("RP", "Efluid RP 29/04/2026")])
-        self.assertIn("Annulation reaffectation", [line.split(";")[7] for line in output if line.startswith("D;")])
+        self.assertIn("Annulation reaffectation", [line.split(";")[6] for line in output if line.startswith("D;")])
 
     def test_piece_type_is_invoice_only_when_all_labels_are_invoices(self) -> None:
         output, _, _ = run([
