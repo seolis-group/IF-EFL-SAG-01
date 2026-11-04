@@ -200,7 +200,9 @@ def piece_records(piece_lines: list[SageLine], run_date: str, config: dict[str, 
         "NUM": "",
         "FCY": first.company,
         "JOU": first.journal,
-        "ACCDAT": first.operation_date if rules["accounting_date"] == "operation_date" else run_date,
+        "ACCDAT": datetime.strptime(
+            first.operation_date if rules["accounting_date"] == "operation_date" else run_date, "%Y%m%d"
+        ).strftime(sage["date_format"]),
         "CAT": rules["category"],
         "STA": rules["status"],
         "DESVCR": description,
