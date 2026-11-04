@@ -155,6 +155,7 @@
     "encoding": "iso-8859-1",
     "line_ending": "CRLF",
     "decimal_separator": ",",
+    "date_format": "%Y%m%d",
     "description_max_length": 30,
     "origin_document_max_length": 20,
     "free_reference_max_length": 30,

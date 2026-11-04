@@ -78,6 +78,15 @@ class TransformTests(unittest.TestCase):
         ])
         self.assertEqual((stats.pieces_written, stats.debit_cents, stats.credit_cents), (1, 12000, 12000))
 
+    def test_date_format_follows_sage_model(self) -> None:
+        config = {**CONFIG, "sage": {**CONFIG["sage"], "date_format": "%d%m%Y"}}
+        output, rejected, _ = transform_lines([
+            efluid_line(account="411110", direction="1", amount="12000"),
+            efluid_line(account="706100", ana1="DCO", ana3="GRD", ana5="9825101", tax_code="72", direction="-1", amount="-12000"),
+        ], config, TRANSCO, "20260430")
+        self.assertEqual(rejected, [])
+        self.assertTrue(output[0].startswith(f"G;FACEF;;{COMPANY};VE;29042026;"))
+
     def test_account_is_transcoded(self) -> None:
         output, rejected, _ = run([
             efluid_line(journal="RX", label="Provision", account="411110", direction="1", amount="500"),

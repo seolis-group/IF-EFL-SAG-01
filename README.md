@@ -107,7 +107,8 @@ A;ANALIN;LEDTYP;FCYLIN;DIE(0);CCE(0);DIE(1);CCE(1);DIE(2);CCE(2);DIE(3);CCE(3);A
 
 Paramètres du modèle : fichier à séparateur d'enregistrement, séparateur de champ
 `;`, fin d'enregistrement CRLF (`\013\010`), jeu de caractères ISO-8859-1,
-séparateur décimal `,`, dates `AAAAMMJJ`.
+séparateur décimal `,`, dates `AAAAMMJJ` (`sage.date_format` : passer à `%d%m%Y`
+si le modèle EFLUID est aligné sur le format standard SEOLIS `JJMMAAAA`).
 
 Exemple :
 
