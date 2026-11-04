@@ -70,7 +70,7 @@ class TransformTests(unittest.TestCase):
         ])
         self.assertEqual(rejected, [])
         self.assertEqual(output, [
-            f"G;FACEF;;{COMPANY};VE;20260429;1;2;Efluid VE 29/04/2026;CG260429;;EUR;1;STDCO",
+            f"G;FACEF;;{COMPANY};VE;29042026;1;2;Efluid VE 29/04/2026;CG260429;;EUR;1;STDCO",
             f"D;1;1;{COMPANY};411110;;Facturation produit;1;120,00;120,00;HG;CG260429;CG260429;004",
             f"D;2;1;{COMPANY};706100;;Facturation produit;-1;120,00;120,00;HG;CG260429;CG260429;001",
             f"D;2;2;{COMPANY};706100;;Facturation produit;-1;120,00;120,00;;CG260429;CG260429;",
@@ -79,13 +79,13 @@ class TransformTests(unittest.TestCase):
         self.assertEqual((stats.pieces_written, stats.debit_cents, stats.credit_cents), (1, 12000, 12000))
 
     def test_date_format_follows_sage_model(self) -> None:
-        config = {**CONFIG, "sage": {**CONFIG["sage"], "date_format": "%d%m%Y"}}
+        config = {**CONFIG, "sage": {**CONFIG["sage"], "date_format": "%Y%m%d"}}
         output, rejected, _ = transform_lines([
             efluid_line(account="411110", direction="1", amount="12000"),
             efluid_line(account="706100", ana1="DCO", ana3="GRD", ana5="9825101", tax_code="72", direction="-1", amount="-12000"),
         ], config, TRANSCO, "20260430")
         self.assertEqual(rejected, [])
-        self.assertTrue(output[0].startswith(f"G;FACEF;;{COMPANY};VE;29042026;"))
+        self.assertTrue(output[0].startswith(f"G;FACEF;;{COMPANY};VE;20260429;"))
 
     def test_account_is_transcoded(self) -> None:
         output, rejected, _ = run([
