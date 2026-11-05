@@ -55,6 +55,7 @@ TRANSCO = Transco(
         AccountTransco("704850", "", "", "", "", "899", "9365200"),
     ],
     {"0": "004", "72": "001"},
+    frozenset({"443170", "443175"}),
 )
 
 
@@ -223,6 +224,7 @@ class TranscoSourceTests(unittest.TestCase):
         self.assertGreater(len(selia.by_account), 20)
         self.assertNotEqual(geredis.by_account.keys(), selia.by_account.keys())
         self.assertEqual(geredis.tax("72"), "001")
+        self.assertEqual(geredis.quantity_accounts, frozenset({"443170", "443175"}))
 
     def test_company_without_accounts_is_refused(self) -> None:
         with self.assertRaises(ValueError):
@@ -235,8 +237,10 @@ class TranscoSourceTests(unittest.TestCase):
                 "societe;compte_ubw;compte_sage;ana1;ana3;ana5;service_sage;compte_ana_sage;libelle\n"
                 "A;411110;411111;;;;;;CLIENTS\nB;411110;411112;;;;;;CLIENTS\n", encoding="utf-8")
             (root / "taxes.csv").write_text("code_efluid;code_sage\n0;004\n", encoding="utf-8")
-            source = CsvTranscoSource(root / "comptes.csv", root / "taxes.csv")
+            (root / "quantite.csv").write_text("compte_sage;libelle\n443170;\n", encoding="utf-8")
+            source = CsvTranscoSource(root / "comptes.csv", root / "taxes.csv", root / "quantite.csv")
             self.assertEqual([row.sage_account for row in source.accounts("B")], ["411112"])
+            self.assertEqual(source.quantity_accounts(), frozenset({"443170"}))
 
     def test_unknown_source_type_is_refused(self) -> None:
         with self.assertRaises(ValueError):

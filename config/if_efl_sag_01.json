@@ -127,10 +127,6 @@
     "chantier_account_prefixes": [
       "467"
     ],
-    "quantity_accounts": [
-      "443170",
-      "443175"
-    ],
     "treasury_journals": [
       "RB",
       "RE",
@@ -147,7 +143,8 @@
   "transco": {
     "source": "csv",
     "accounts": "transco/comptes.csv",
-    "taxes": "transco/codes_taxe.csv"
+    "taxes": "transco/codes_taxe.csv",
+    "quantity": "transco/comptes_quantite.csv"
   },
   "sage": {
     "model": "EFLUID",
