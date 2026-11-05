@@ -28,8 +28,10 @@ class Stats:
 class Transco:
     """Tables de transcodification comptes / sections / codes taxe."""
 
-    def __init__(self, accounts: list[AccountTransco], taxes: dict[str, str]) -> None:
+    def __init__(self, accounts: list[AccountTransco], taxes: dict[str, str],
+                 quantity_accounts: frozenset[str] = frozenset()) -> None:
         self.taxes = taxes
+        self.quantity_accounts = quantity_accounts
         self.by_account: dict[str, list[AccountTransco]] = {}
         for row in accounts:
             self.by_account.setdefault(row.ubw_account, []).append(row)
@@ -42,7 +44,7 @@ class Transco:
             raise ValueError(f"table de transcodification des comptes vide pour la société {societe}")
         if not taxes:
             raise ValueError("table de transcodification des codes taxe vide")
-        return cls(accounts, taxes)
+        return cls(accounts, taxes, source.quantity_accounts())
 
     def sage_account(self, ubw_account: str) -> str:
         rows = self.by_account.get(ubw_account)
@@ -167,7 +169,7 @@ def to_sage_line(line: EfluidLine, transco: Transco, config: dict[str, Any]) -> 
         service=service,
         chantier=line.ana2 if starts_with(line.account, rules["chantier_account_prefixes"]) else "",
         analytic_account=analytic_account,
-        quantity=line.ana2 if account in rules["quantity_accounts"] else "",
+        quantity=line.ana2 if account in transco.quantity_accounts else "",
     )
 
 
