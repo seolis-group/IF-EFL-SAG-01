@@ -12,6 +12,8 @@ import csv
 from pathlib import Path
 from typing import Any, Protocol
 
+from common.manifest import verify_published_files
+
 from .model import AccountTransco
 
 
@@ -63,5 +65,8 @@ def open_source(base_dir: Path, config: dict[str, Any]) -> TranscoSource:
     settings = config["transco"]
     kind = settings.get("source", "csv")
     if kind == "csv":
-        return CsvTranscoSource(base_dir / settings["accounts"], base_dir / settings["taxes"])
+        accounts, taxes = base_dir / settings["accounts"], base_dir / settings["taxes"]
+        if settings.get("manifest"):
+            verify_published_files(base_dir / settings["manifest"], [accounts, taxes])
+        return CsvTranscoSource(accounts, taxes)
     raise ValueError(f"source de transcodification inconnue : {kind}")

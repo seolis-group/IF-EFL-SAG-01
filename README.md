@@ -184,7 +184,10 @@ IF-EFL-SAG-01 lit :
 - `codes_taxe.csv` : `code_efluid;code_sage`, commun aux sociétés.
 
 Les chemins sont donnés par `transco.accounts` et `transco.taxes` (relatifs au
-projet, ou absolus vers le répertoire déposé).
+projet, ou absolus vers le répertoire déposé). Si `transco.manifest` est renseigné,
+l'empreinte SHA-256 de chaque fichier lu est comparée à celle du `manifest.json`
+publié par le portail : un fichier modifié hors portail ou tronqué au transfert
+arrête le traitement (code retour 3).
 Les fichiers de `transco/` sont la version initiale publiée par l'application.
 Le moteur lit le référentiel via l'interface `TranscoSource`
 (`interfaces/if_efl_sag_01/transco_source.py`), choisie par `transco.source`.

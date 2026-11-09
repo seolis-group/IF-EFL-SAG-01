@@ -244,6 +244,18 @@ class TranscoSourceTests(unittest.TestCase):
             self.assertEqual(source.quantity_accounts("B"), frozenset({"443170"}))
             self.assertEqual(source.quantity_accounts("A"), frozenset())
 
+    def test_published_file_modified_after_publication_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name in ("correspondances_ubw_sage.csv", "codes_taxe.csv", "manifest.json"):
+                (root / name).write_bytes((ROOT / "transco" / name).read_bytes())
+            settings = {"source": "csv", "accounts": "correspondances_ubw_sage.csv", "taxes": "codes_taxe.csv", "manifest": "manifest.json"}
+            self.assertIsInstance(open_source(root, {"transco": settings}), CsvTranscoSource)
+            with (root / "codes_taxe.csv").open("a", encoding="utf-8") as stream:
+                stream.write("99;001\n")
+            with self.assertRaisesRegex(ValueError, "empreinte de codes_taxe.csv"):
+                open_source(root, {"transco": settings})
+
     def test_unknown_source_type_is_refused(self) -> None:
         with self.assertRaises(ValueError):
             open_source(ROOT, {"transco": {"source": "x3"}})
