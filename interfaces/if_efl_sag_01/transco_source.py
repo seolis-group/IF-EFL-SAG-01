@@ -22,8 +22,8 @@ class TranscoSource(Protocol):
     def taxes(self) -> dict[str, str]:
         """Correspondances code taxe Efluid → code taxe Sage, communes aux sociétés."""
 
-    def quantity_accounts(self) -> frozenset[str]:
-        """Comptes Sage ouverts à la quantité (QTY de la ligne analytique)."""
+    def quantity_accounts(self, societe: str) -> frozenset[str]:
+        """Comptes Sage ouverts à la quantité d'une société (QTY de la ligne analytique)."""
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -32,13 +32,12 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 
 class CsvTranscoSource:
-    """Référentiel CSV publié par l'application TRANSCO-SAGE : comptes (colonne `societe`),
-    codes taxe et comptes ouverts à la quantité."""
+    """Référentiel CSV publié par l'application TRANSCO-SAGE : correspondances UBW → Sage
+    communes aux batchs (colonne `societe`, indicateur `quantite`) et codes taxe."""
 
-    def __init__(self, accounts_path: Path, taxes_path: Path, quantity_path: Path | None = None) -> None:
+    def __init__(self, accounts_path: Path, taxes_path: Path) -> None:
         self.accounts_path = accounts_path
         self.taxes_path = taxes_path
-        self.quantity_path = quantity_path
 
     def accounts(self, societe: str) -> list[AccountTransco]:
         return [
@@ -53,15 +52,16 @@ class CsvTranscoSource:
     def taxes(self) -> dict[str, str]:
         return {row["code_efluid"]: row["code_sage"] for row in read_csv(self.taxes_path)}
 
-    def quantity_accounts(self) -> frozenset[str]:
-        if self.quantity_path is None:
-            return frozenset()
-        return frozenset(row["compte_sage"] for row in read_csv(self.quantity_path))
+    def quantity_accounts(self, societe: str) -> frozenset[str]:
+        return frozenset(
+            row["compte_sage"] for row in read_csv(self.accounts_path)
+            if row["societe"] == societe and row["quantite"] == "oui"
+        )
 
 
 def open_source(base_dir: Path, config: dict[str, Any]) -> TranscoSource:
     settings = config["transco"]
     kind = settings.get("source", "csv")
     if kind == "csv":
-        return CsvTranscoSource(base_dir / settings["accounts"], base_dir / settings["taxes"], base_dir / settings["quantity"])
+        return CsvTranscoSource(base_dir / settings["accounts"], base_dir / settings["taxes"])
     raise ValueError(f"source de transcodification inconnue : {kind}")

@@ -16,7 +16,7 @@ CONFIG_PATH = ROOT / "config" / "if_efl_sag_01.json"
 BASE_CONFIG = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 CONFIG = societe_config(BASE_CONFIG, "GEREDIS")
 COMPANY = CONFIG["efluid"]["company_code"]
-EXAMPLES = ROOT.parents[1] / "EFluid_output_examples"
+EXAMPLES = ROOT.parents[1] / "01 - BESOINS" / "EFLUID SAGE " / "EFluid_output_examples"
 
 
 def efluid_line(config: dict = CONFIG, **values: str) -> str:
@@ -224,7 +224,8 @@ class TranscoSourceTests(unittest.TestCase):
         self.assertGreater(len(selia.by_account), 20)
         self.assertNotEqual(geredis.by_account.keys(), selia.by_account.keys())
         self.assertEqual(geredis.tax("72"), "001")
-        self.assertEqual(geredis.quantity_accounts, frozenset({"443170", "443175"}))
+        self.assertEqual(geredis.quantity_accounts, frozenset())
+        self.assertEqual(selia.quantity_accounts, frozenset({"443170", "443175", "607152", "607155", "607157"}))
 
     def test_company_without_accounts_is_refused(self) -> None:
         with self.assertRaises(ValueError):
@@ -233,14 +234,15 @@ class TranscoSourceTests(unittest.TestCase):
     def test_csv_source_reads_company_column(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            (root / "comptes.csv").write_text(
-                "societe;compte_ubw;compte_sage;ana1;ana3;ana5;service_sage;compte_ana_sage;libelle\n"
-                "A;411110;411111;;;;;;CLIENTS\nB;411110;411112;;;;;;CLIENTS\n", encoding="utf-8")
+            (root / "correspondances.csv").write_text(
+                "societe;compte_ubw;ana1;ana3;ana5;compte_sage;service_sage;compte_ana_sage;quantite;libelle\n"
+                "A;411110;;;;411111;;;;CLIENTS\nB;411110;;;;411112;;;;CLIENTS\nB;443170;;;;443170;;;oui;TICFE\n",
+                encoding="utf-8")
             (root / "taxes.csv").write_text("code_efluid;code_sage\n0;004\n", encoding="utf-8")
-            (root / "quantite.csv").write_text("compte_sage;libelle\n443170;\n", encoding="utf-8")
-            source = CsvTranscoSource(root / "comptes.csv", root / "taxes.csv", root / "quantite.csv")
-            self.assertEqual([row.sage_account for row in source.accounts("B")], ["411112"])
-            self.assertEqual(source.quantity_accounts(), frozenset({"443170"}))
+            source = CsvTranscoSource(root / "correspondances.csv", root / "taxes.csv")
+            self.assertEqual([row.sage_account for row in source.accounts("B")], ["411112", "443170"])
+            self.assertEqual(source.quantity_accounts("B"), frozenset({"443170"}))
+            self.assertEqual(source.quantity_accounts("A"), frozenset())
 
     def test_unknown_source_type_is_refused(self) -> None:
         with self.assertRaises(ValueError):

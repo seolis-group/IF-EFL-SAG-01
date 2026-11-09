@@ -44,7 +44,7 @@ class Transco:
             raise ValueError(f"table de transcodification des comptes vide pour la société {societe}")
         if not taxes:
             raise ValueError("table de transcodification des codes taxe vide")
-        return cls(accounts, taxes, source.quantity_accounts())
+        return cls(accounts, taxes, source.quantity_accounts(societe))
 
     def sage_account(self, ubw_account: str) -> str:
         rows = self.by_account.get(ubw_account)

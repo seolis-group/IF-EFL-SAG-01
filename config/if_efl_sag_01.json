@@ -142,9 +142,8 @@
   },
   "transco": {
     "source": "csv",
-    "accounts": "transco/comptes.csv",
-    "taxes": "transco/codes_taxe.csv",
-    "quantity": "transco/comptes_quantite.csv"
+    "accounts": "transco/correspondances_ubw_sage.csv",
+    "taxes": "transco/codes_taxe.csv"
   },
   "sage": {
     "model": "EFLUID",

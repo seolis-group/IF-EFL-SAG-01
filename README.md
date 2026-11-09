@@ -150,7 +150,7 @@ Règles validées en atelier le 21/10/2026, sauf mention contraire.
   (`105103` → `1051,03`), sens porté par `SNS` (zone 17 : 1 / -1). Un signe
   incohérent avec le flag est rejeté.
 - **Montant nul** : la ligne est ignorée et signalée (code retour 1).
-- **ACC** : compte Agresso (zone 6) transcodifié via `transco/comptes.csv`.
+- **ACC** : compte Agresso (zone 6) transcodifié via `transco/correspondances_ubw_sage.csv`.
 - **Analytique** (`LEDTYP` 2) : comptes Sage de classes 2, 6, 7 et comptes
   467510, 467520, 467530, 443170, 443175. La ligne D est émise une seconde fois
   en `LEDTYP` 2 (sans partenaire ni taxe, comme dans le fichier type Sage), suivie
@@ -159,8 +159,8 @@ Règles validées en atelier le 21/10/2026, sauf mention contraire.
     compte, ANA3 (zone 9) et ANA5 (zone 11), obligatoire pour les classes 6 et 7 ;
   - `CCE(1)` chantier : ANA2 (zone 8) si le compte commence par 467 ;
   - `CCE(3)` marché : vide ;
-  - `QTY` quantité : ANA2 (zone 8) pour les comptes Sage de
-    `transco/comptes_quantite.csv` (443170, 443175), vide sinon.
+  - `QTY` quantité : ANA2 (zone 8) pour les comptes Sage marqués `quantite` = oui
+    dans les correspondances de la société (443170, 443175), vide sinon.
 - **TAX** : code taxe (zone 14) transcodifié via `transco/codes_taxe.csv`
   (`0` → `004`). Sur les journaux de trésorerie (`rules.treasury_journals` :
   RB, RE, RF, RI, RP, RV, RX), le code `0` donne un code taxe vide ; les autres
@@ -172,17 +172,19 @@ Règles validées en atelier le 21/10/2026, sauf mention contraire.
 
 ## Transcodification
 
-Le référentiel est géré par le métier dans l'application TRANSCO-SAGE (PHP,
-PostgreSQL), qui publie trois fichiers ; le batch lit la version publiée,
-déposée par OPCON sur le serveur batch :
+Le paramétrage est géré par le métier dans l'application TRANSCO-SAGE (PHP,
+PostgreSQL). Il est commun à tous les batchs : une publication dépose tous les
+fichiers dans un même répertoire (OPCON), chaque batch lit ceux dont il a besoin.
+IF-EFL-SAG-01 lit :
 
-- `comptes.csv` : une table unique, colonne `societe` en tête, puis
-  `compte_ubw;compte_sage;ana1;ana3;ana5;service_sage;compte_ana_sage;libelle` ;
-- `codes_taxe.csv` : `code_efluid;code_sage`, commun aux sociétés ;
-- `comptes_quantite.csv` : `compte_sage;libelle`, comptes ouverts à la quantité.
+- `correspondances_ubw_sage.csv` : correspondances UBW → Sage partagées avec
+  IF-ACH-SAG-01, `societe;compte_ubw;ana1;ana3;ana5;compte_sage;service_sage;compte_ana_sage;quantite;libelle`
+  (le batch ne retient que les lignes de sa société ; `quantite` = oui pour un
+  compte ouvert à la quantité) ;
+- `codes_taxe.csv` : `code_efluid;code_sage`, commun aux sociétés.
 
-Les chemins sont donnés par `transco.accounts`, `transco.taxes` et
-`transco.quantity` (relatifs au projet, ou absolus vers le répertoire déposé).
+Les chemins sont donnés par `transco.accounts` et `transco.taxes` (relatifs au
+projet, ou absolus vers le répertoire déposé).
 Les fichiers de `transco/` sont la version initiale publiée par l'application.
 Le moteur lit le référentiel via l'interface `TranscoSource`
 (`interfaces/if_efl_sag_01/transco_source.py`), choisie par `transco.source`.
