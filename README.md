@@ -50,7 +50,8 @@ logs/IF-EFL-SAG-01_GEREDIS_<AAAAMMJJ_HHMMSS>.log     avec --societe GEREDIS
 
 Le fichier à traiter est choisi par le préfixe de son nom (`GEREDIS*`,
 `SELIA*`, `SEOLIS*`, `SEOLISHA*`), selon le motif `file_pattern` de chaque
-société. Avec `--societe`, le journal porte le nom de la société : des jobs
+société, avec ou sans horodatage de génération (`SEOLISCG260325.txt` ou
+`SEOLISCG260429_20260430-000925.txt`). Avec `--societe`, le journal porte le nom de la société : des jobs
 OPCON lancés en parallèle, un par société, n'écrivent donc jamais dans le
 même journal.
 

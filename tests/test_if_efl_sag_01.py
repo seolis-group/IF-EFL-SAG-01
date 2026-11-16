@@ -347,6 +347,15 @@ class CliTests(unittest.TestCase):
             self.assertEqual(main(self.arguments(root, "--societe", "SELIA")), 0)
             self.assertEqual([path.name for path in (root / "out").glob("*.txt")], [f"{INTERFACE_ID}_SELIACG260429_20260430-000914.txt"])
 
+    def test_file_name_without_generation_timestamp_is_processed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "in").mkdir()
+            balanced_file(root / "in", "SEOLIS", stamp="260325")
+            balanced_file(root / "in", "SEOLISHA", stamp="260325")
+            self.assertEqual(main(self.arguments(root, "--societe", "SEOLIS")), 0)
+            self.assertEqual([path.name for path in (root / "out").glob("*.txt")], [f"{INTERFACE_ID}_SEOLISCG260325.txt"])
+
     def test_parallel_jobs_have_their_own_log(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -386,16 +395,17 @@ class RealExampleTests(unittest.TestCase):
     def test_real_examples_are_processed(self) -> None:
         source = open_source(ROOT, BASE_CONFIG)
         for name in societe_names(BASE_CONFIG):
-            with self.subTest(societe=name):
-                config = societe_config(BASE_CONFIG, name)
-                files = sorted(EXAMPLES.glob(f"{name}CG*.txt"))
-                self.assertEqual(len(files), 1)
-                lines = [line for line in files[0].read_text(encoding="ascii").splitlines() if line.strip()]
-                transco = Transco.load(source, config["transco_societe"])
-                output, rejected, stats = transform_lines(lines, config, transco, "20260430")
-                self.assertGreater(stats.pieces_written, 0)
-                self.assertEqual(stats.debit_cents, stats.credit_cents)
-                self.assertEqual(stats.lines_written + len(rejected) + stats.zero_amount_skipped, stats.lines_read)
+            config = societe_config(BASE_CONFIG, name)
+            files = sorted(EXAMPLES.glob(f"{name}CG*.txt"))
+            self.assertTrue(files, name)
+            transco = Transco.load(source, config["transco_societe"])
+            for path in files:
+                with self.subTest(fichier=path.name):
+                    lines = [line for line in path.read_text(encoding="ascii").splitlines() if line.strip()]
+                    output, rejected, stats = transform_lines(lines, config, transco, "20260430")
+                    self.assertGreater(stats.pieces_written, 0)
+                    self.assertEqual(stats.debit_cents, stats.credit_cents)
+                    self.assertEqual(stats.lines_written + len(rejected) + stats.zero_amount_skipped, stats.lines_read)
 
 
 if __name__ == "__main__":

@@ -206,19 +206,19 @@
   },
   "societes": {
     "GEREDIS": {
-      "file_pattern": "^GEREDISCG(?P<accounting_date>\\d{6})_(?P<generated_at>\\d{8}-\\d{6})\\.txt$",
+      "file_pattern": "^GEREDISCG(?P<accounting_date>\\d{6})(?:_(?P<generated_at>\\d{8}-\\d{6}))?\\.txt$",
       "company_code": "GE"
     },
     "SELIA": {
-      "file_pattern": "^SELIACG(?P<accounting_date>\\d{6})_(?P<generated_at>\\d{8}-\\d{6})\\.txt$",
+      "file_pattern": "^SELIACG(?P<accounting_date>\\d{6})(?:_(?P<generated_at>\\d{8}-\\d{6}))?\\.txt$",
       "company_code": "SA"
     },
     "SEOLIS": {
-      "file_pattern": "^SEOLISCG(?P<accounting_date>\\d{6})_(?P<generated_at>\\d{8}-\\d{6})\\.txt$",
+      "file_pattern": "^SEOLISCG(?P<accounting_date>\\d{6})(?:_(?P<generated_at>\\d{8}-\\d{6}))?\\.txt$",
       "company_code": "SO"
     },
     "SEOLISHA": {
-      "file_pattern": "^SEOLISHACG(?P<accounting_date>\\d{6})_(?P<generated_at>\\d{8}-\\d{6})\\.txt$",
+      "file_pattern": "^SEOLISHACG(?P<accounting_date>\\d{6})(?:_(?P<generated_at>\\d{8}-\\d{6}))?\\.txt$",
       "company_code": "SO",
       "transco_societe": "SEOLIS"
     }
