@@ -25,13 +25,23 @@ class Stats:
     skipped_lines: list[int] = field(default_factory=list)
 
 
+CHANTIER_RULE = "CCE(1)"
+QUANTITY_RULE = "QTY"
+
+
 class Transco:
     """Tables de transcodification comptes / sections / codes taxe."""
 
     def __init__(self, accounts: list[AccountTransco], taxes: dict[str, str],
-                 quantity_accounts: frozenset[str] = frozenset()) -> None:
+                 analytic_rules: dict[str, frozenset[str]] | None = None) -> None:
         self.taxes = taxes
-        self.quantity_accounts = quantity_accounts
+        # Règles « RM - Chantier ou QTY » : la zone 8 (ANA2) va en CCE(1) ou en QTY.
+        rules = analytic_rules or {}
+        unknown = set(rules) - {CHANTIER_RULE, QUANTITY_RULE}
+        if unknown:
+            raise ValueError(f"règle analytique Efluid inconnue : {sorted(unknown)}")
+        self.chantier_accounts = rules.get(CHANTIER_RULE, frozenset())
+        self.quantity_accounts = rules.get(QUANTITY_RULE, frozenset())
         self.by_account: dict[str, list[AccountTransco]] = {}
         for row in accounts:
             self.by_account.setdefault(row.ubw_account, []).append(row)
@@ -44,7 +54,7 @@ class Transco:
             raise ValueError(f"table de transcodification des comptes vide pour la société {societe}")
         if not taxes:
             raise ValueError("table de transcodification des codes taxe vide")
-        return cls(accounts, taxes, source.quantity_accounts(societe))
+        return cls(accounts, taxes, source.analytic_rules())
 
     def sage_account(self, ubw_account: str) -> str:
         rows = self.by_account.get(ubw_account)
@@ -147,9 +157,10 @@ def to_sage_line(line: EfluidLine, transco: Transco, config: dict[str, Any]) -> 
         tax = "" if untaxed else transco.tax(line.tax_code)
     except ValueError as error:
         errors.append(str(error))
-    analytic = bool(account) and (
-        starts_with(account, rules["analytic_account_prefixes"]) or account in rules["analytic_accounts"]
-    )
+    chantier = account in transco.chantier_accounts
+    quantity = account in transco.quantity_accounts
+    # Référentiel analytique (LEDTYP 2) : classes 2, 6, 7 et comptes des règles CCE(1) / QTY.
+    analytic = bool(account) and (starts_with(account, rules["analytic_account_prefixes"]) or chantier or quantity)
     service = analytic_account = ""
     if analytic:
         try:
@@ -167,9 +178,9 @@ def to_sage_line(line: EfluidLine, transco: Transco, config: dict[str, Any]) -> 
         tax=tax,
         analytic=analytic,
         service=service,
-        chantier=line.ana2 if starts_with(line.account, rules["chantier_account_prefixes"]) else "",
+        chantier=line.ana2 if chantier else "",
         analytic_account=analytic_account,
-        quantity=line.ana2 if account in transco.quantity_accounts else "",
+        quantity=line.ana2 if quantity else "",
     )
 
 
@@ -196,9 +207,13 @@ def piece_records(piece_lines: list[SageLine], run_date: str, config: dict[str, 
     description = rules["piece_description"].format(journal=first.journal, date=f"{day:%d/%m/%Y}")
     description = description[: int(sage["description_max_length"])]
     invoice = all(line.source.label in rules["invoice_labels"] for line in piece_lines)
+    # Type imposé par journal (AI → FAFEF, recette du 12/11/2026), sinon selon les libellés.
+    piece_type = rules.get("journal_piece_types", {}).get(
+        first.journal, rules["invoice_piece_type"] if invoice else rules["other_piece_type"]
+    )
     cac_reference = first.cac_reference[: int(sage["free_reference_max_length"])]
     header = {
-        "TYP": rules["invoice_piece_type"] if invoice else rules["other_piece_type"],
+        "TYP": piece_type,
         "NUM": "",
         "FCY": first.company,
         "JOU": first.journal,

@@ -102,6 +102,9 @@
       "Facturation produit"
     ],
     "invoice_piece_type": "FACEF",
+    "journal_piece_types": {
+      "AI": "FAFEF"
+    },
     "other_piece_type": "RECEF",
     "category": "1",
     "status": "2",
@@ -113,19 +116,9 @@
       "6",
       "7"
     ],
-    "analytic_accounts": [
-      "467510",
-      "467520",
-      "467530",
-      "443170",
-      "443175"
-    ],
     "analytic_transco_required_prefixes": [
       "6",
       "7"
-    ],
-    "chantier_account_prefixes": [
-      "467"
     ],
     "treasury_journals": [
       "RB",
@@ -144,6 +137,7 @@
     "source": "csv",
     "accounts": "transco/correspondances_ubw_sage.csv",
     "taxes": "transco/codes_taxe.csv",
+    "analytic_rules": "transco/regles_analytiques_efluid.csv",
     "manifest": "transco/manifest.json"
   },
   "sage": {

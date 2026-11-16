@@ -136,8 +136,9 @@ Règles validées en atelier le 21/10/2026, sauf mention contraire.
   la transcodification, code taxe inconnu, format invalide) entraîne le rejet de
   toute sa pièce, donc de tout le journal du jour, pour ne jamais transmettre une
   pièce incomplète à Sage.
-- **TYP** : `FACEF` si toutes les lignes de la pièce ont le libellé
-  « Facturation produit », sinon `RECEF`.
+- **TYP** : `FAFEF` pour le journal AI (`rules.journal_piece_types`, recette du
+  12/11/2026) ; pour les autres journaux, `FACEF` si toutes les lignes de la pièce
+  ont le libellé « Facturation produit », sinon `RECEF`.
 - **DESVCR** (en-tête) : `rules.piece_description`, soit « Efluid <journal>
   <JJ/MM/AAAA> ». Chaque ligne D garde son libellé Efluid (zone 21).
 - **ACCDAT** : date d'opération Efluid (zone 22). Valeur `run_date` possible
@@ -151,16 +152,17 @@ Règles validées en atelier le 21/10/2026, sauf mention contraire.
   incohérent avec le flag est rejeté.
 - **Montant nul** : la ligne est ignorée et signalée (code retour 1).
 - **ACC** : compte Agresso (zone 6) transcodifié via `transco/correspondances_ubw_sage.csv`.
-- **Analytique** (`LEDTYP` 2) : comptes Sage de classes 2, 6, 7 et comptes
-  467510, 467520, 467530, 443170, 443175. La ligne D est émise une seconde fois
+- **Analytique** (`LEDTYP` 2) : comptes Sage de classes 2, 6, 7 et comptes des
+  règles analytiques Efluid (`regles_analytiques_efluid.csv`, onglet « RM - Chantier
+  ou QTY » de la matrice V2, recette du 12/11/2026). La ligne D est émise une seconde fois
   en `LEDTYP` 2 (sans partenaire ni taxe, comme dans le fichier type Sage), suivie
   d'une ligne A :
   - `CCE(0)` service et `CCE(2)` compte analytique : transcodification par
     compte, ANA3 (zone 9) et ANA5 (zone 11), obligatoire pour les classes 6 et 7 ;
-  - `CCE(1)` chantier : ANA2 (zone 8) si le compte commence par 467 ;
+  - `CCE(1)` chantier : ANA2 (zone 8) pour les comptes Sage de la règle `CCE(1)`, vide sinon ;
   - `CCE(3)` marché : vide ;
-  - `QTY` quantité : ANA2 (zone 8) pour les comptes Sage marqués `quantite` = oui
-    dans les correspondances de la société (443170, 443175), vide sinon.
+  - `QTY` quantité : ANA2 (zone 8) pour les comptes Sage de la règle `QTY`, vide sinon.
+    Un compte présent dans les deux règles (706230) reçoit ANA2 dans les deux champs.
 - **TAX** : code taxe (zone 14) transcodifié via `transco/codes_taxe.csv`
   (`0` → `004`). Sur les journaux de trésorerie (`rules.treasury_journals` :
   RB, RE, RF, RI, RP, RV, RX), le code `0` donne un code taxe vide ; les autres
@@ -179,11 +181,15 @@ IF-EFL-SAG-01 lit :
 
 - `correspondances_ubw_sage.csv` : correspondances UBW → Sage partagées avec
   IF-ACH-SAG-01, `societe;compte_ubw;ana1;ana3;ana5;compte_sage;service_sage;compte_ana_sage;quantite;libelle`
-  (le batch ne retient que les lignes de sa société ; `quantite` = oui pour un
-  compte ouvert à la quantité) ;
-- `codes_taxe.csv` : `code_efluid;code_sage`, commun aux sociétés.
+  (le batch ne retient que les lignes de sa société ; la colonne `quantite` ne
+  sert qu'à IF-ACH-SAG-01) ;
+- `codes_taxe.csv` : `code_efluid;code_sage`, commun aux sociétés ;
+- `regles_analytiques_efluid.csv` : `regle;compte_sage;libelle`, commun aux
+  sociétés ; règle `CCE(1)` ou `QTY` (zone 8 en section chantier ou en quantité),
+  le compte passe en référentiel analytique.
 
-Les chemins sont donnés par `transco.accounts` et `transco.taxes` (relatifs au
+Les chemins sont donnés par `transco.accounts`, `transco.taxes` et
+`transco.analytic_rules` (relatifs au
 projet, ou absolus vers le répertoire déposé). Si `transco.manifest` est renseigné,
 l'empreinte SHA-256 de chaque fichier lu est comparée à celle du `manifest.json`
 publié par le portail : un fichier modifié hors portail ou tronqué au transfert
@@ -206,5 +212,4 @@ Le test sur fichier réel utilise `../../EFluid_output_examples` s'il est prése
   maintenant que `YREFEFLUID` la porte ;
 - GEREDIS : 704313 / RAC / 9810103 et 704533 / PRE / 9352302 sans section
   service ni compte analytique Sage dans le classeur (pièce VE rejetée) ;
-- liste complète des comptes ouverts à la quantité ;
 - cadrage de l'interface PHP de gestion de la transcodification.

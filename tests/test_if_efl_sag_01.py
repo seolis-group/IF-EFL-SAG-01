@@ -52,10 +52,14 @@ TRANSCO = Transco(
         AccountTransco("775000", "757000", "SLO", "GRD", "9841000", "899", "9411000"),
         AccountTransco("467510", "467510", "", "", "", "", ""),
         AccountTransco("443170", "443170", "", "", "", "", ""),
+        AccountTransco("443115", "443115", "", "", "", "", ""),
+        AccountTransco("467520", "467520", "", "", "", "", ""),
+        AccountTransco("704310", "704310", "DCO", "GRD", "9825101", "620", "9301101"),
+        AccountTransco("706230", "706230", "DCO", "GRD", "9825101", "620", "9301101"),
         AccountTransco("704850", "", "", "", "", "899", "9365200"),
     ],
     {"0": "004", "72": "001"},
-    frozenset({"443170", "443175"}),
+    {"CCE(1)": frozenset({"467510", "704310", "706230"}), "QTY": frozenset({"443115", "443170", "706230"})},
 )
 
 
@@ -98,7 +102,7 @@ class TransformTests(unittest.TestCase):
         self.assertIn(";757000;", output[2])
         self.assertEqual(output[4], f"A;1;2;{COMPANY};SCE;899;CHA;;CPA;9411000;MAR;;5,00;5,00;;-1")
 
-    def test_chantier_section_for_467_accounts(self) -> None:
+    def test_chantier_section_for_accounts_of_the_cce1_rule(self) -> None:
         output, rejected, _ = run([
             efluid_line(journal="RE", label="Encaissement", account="411110", direction="-1", amount="-300"),
             efluid_line(journal="RE", label="Encaissement", account="467510", ana2="20065502", direction="1", amount="300"),
@@ -106,13 +110,54 @@ class TransformTests(unittest.TestCase):
         self.assertEqual(rejected, [])
         self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;;CHA;20065502;CPA;;MAR;;3,00;3,00;;1")
 
-    def test_quantity_for_accounts_open_to_quantity(self) -> None:
+    def test_quantity_for_accounts_of_the_qty_rule(self) -> None:
         output, rejected, _ = run([
             efluid_line(journal="RE", label="Encaissement", account="411110", direction="-1", amount="-300"),
             efluid_line(journal="RE", label="Encaissement", account="443170", ana2="1250", direction="1", amount="300"),
         ])
         self.assertEqual(rejected, [])
         self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;;CHA;;CPA;;MAR;;3,00;3,00;1250;1")
+
+    def test_chantier_rule_applies_to_class_7_accounts(self) -> None:
+        output, rejected, _ = run([
+            efluid_line(account="411110", direction="1", amount="300"),
+            efluid_line(account="704310", ana1="DCO", ana2="20065502", ana3="GRD", ana5="9825101", tax_code="72", direction="-1", amount="-300"),
+        ])
+        self.assertEqual(rejected, [])
+        self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;620;CHA;20065502;CPA;9301101;MAR;;3,00;3,00;;-1")
+
+    def test_class_7_account_without_rule_has_no_chantier(self) -> None:
+        output, rejected, _ = run([
+            efluid_line(account="411110", direction="1", amount="300"),
+            efluid_line(account="706100", ana1="DCO", ana2="20065502", ana3="GRD", ana5="9825101", tax_code="72", direction="-1", amount="-300"),
+        ])
+        self.assertEqual(rejected, [])
+        self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;620;CHA;;CPA;9301101;MAR;;3,00;3,00;;-1")
+
+    def test_account_in_both_rules_gets_chantier_and_quantity(self) -> None:
+        output, rejected, _ = run([
+            efluid_line(account="411110", direction="1", amount="300"),
+            efluid_line(account="706230", ana1="DCO", ana2="1250", ana3="GRD", ana5="9825101", tax_code="72", direction="-1", amount="-300"),
+        ])
+        self.assertEqual(rejected, [])
+        self.assertEqual(output[-1], f"A;1;2;{COMPANY};SCE;620;CHA;1250;CPA;9301101;MAR;;3,00;3,00;1250;-1")
+
+    def test_rule_accounts_outside_classes_2_6_7_are_analytic(self) -> None:
+        output, rejected, _ = run([
+            efluid_line(journal="RE", label="Encaissement", account="411110", direction="-1", amount="-600"),
+            efluid_line(journal="RE", label="Encaissement", account="443115", ana2="980", direction="1", amount="300"),
+            efluid_line(journal="RE", label="Encaissement", account="467520", ana2="20065502", direction="1", amount="300"),
+        ])
+        self.assertEqual(rejected, [])
+        # 443115 (règle QTY) passe en LEDTYP 2 ; 467520, absent des règles, reste en LEDTYP 1 seul.
+        records = [line.split(";") for line in output[1:]]
+        self.assertEqual([(f[0], f[2], f[4] if f[0] == "D" else "") for f in records],
+                         [("D", "1", "411110"), ("D", "1", "443115"), ("D", "2", "443115"), ("A", "2", ""), ("D", "1", "467520")])
+        self.assertEqual(output[4], f"A;1;2;{COMPANY};SCE;;CHA;;CPA;;MAR;;3,00;3,00;980;1")
+
+    def test_unknown_analytic_rule_is_refused(self) -> None:
+        with self.assertRaisesRegex(ValueError, "règle analytique Efluid inconnue"):
+            Transco([], {}, {"CCE(2)": frozenset({"704310"})})
 
     def test_treasury_lines_have_no_tax_for_code_zero(self) -> None:
         output, rejected, _ = run([
@@ -166,6 +211,15 @@ class TransformTests(unittest.TestCase):
             efluid_line(label="Avoir", account="411110", direction="-1", amount="-100"),
         ])
         self.assertTrue(output[0].startswith("G;RECEF;"))
+
+    def test_journal_ai_gives_supplier_invoice_piece_type(self) -> None:
+        output, _, _ = run([
+            efluid_line(journal="AI", account="411110", direction="1", amount="100"),
+            efluid_line(journal="AI", account="411110", direction="-1", amount="-100"),
+            efluid_line(journal="VE", account="411110", direction="1", amount="100"),
+            efluid_line(journal="VE", account="411110", direction="-1", amount="-100"),
+        ])
+        self.assertEqual([line[:13] for line in output if line.startswith("G;")], ["G;FAFEF;;GE;A", "G;FACEF;;GE;V"])
 
     def test_zero_amount_lines_are_skipped(self) -> None:
         output, rejected, stats = run([efluid_line(journal="RX", label="Compensation", account="411110", direction="-1", amount="0")])
@@ -224,8 +278,12 @@ class TranscoSourceTests(unittest.TestCase):
         self.assertGreater(len(selia.by_account), 20)
         self.assertNotEqual(geredis.by_account.keys(), selia.by_account.keys())
         self.assertEqual(geredis.tax("72"), "001")
-        self.assertEqual(geredis.quantity_accounts, frozenset())
-        self.assertEqual(selia.quantity_accounts, frozenset({"443170", "443175", "607152", "607155", "607157"}))
+        # Règles Efluid communes aux sociétés ; la quantité Acheminement (607152…) n'en fait pas partie.
+        self.assertEqual(geredis.quantity_accounts, selia.quantity_accounts)
+        self.assertIn("443170", selia.quantity_accounts)
+        self.assertNotIn("607155", selia.quantity_accounts)
+        self.assertIn("704310", geredis.chantier_accounts)
+        self.assertEqual((len(geredis.chantier_accounts), len(geredis.quantity_accounts)), (48, 31))
 
     def test_company_without_accounts_is_refused(self) -> None:
         with self.assertRaises(ValueError):
@@ -239,17 +297,21 @@ class TranscoSourceTests(unittest.TestCase):
                 "A;411110;;;;411111;;;;CLIENTS\nB;411110;;;;411112;;;;CLIENTS\nB;443170;;;;443170;;;oui;TICFE\n",
                 encoding="utf-8")
             (root / "taxes.csv").write_text("code_efluid;code_sage\n0;004\n", encoding="utf-8")
-            source = CsvTranscoSource(root / "correspondances.csv", root / "taxes.csv")
+            (root / "regles.csv").write_text(
+                "regle;compte_sage;libelle\nCCE(1);704310;VENTES CHANTIERS\nQTY;443170;TICFE\nQTY;706230;ZEN ELEC\n",
+                encoding="utf-8")
+            source = CsvTranscoSource(root / "correspondances.csv", root / "taxes.csv", root / "regles.csv")
             self.assertEqual([row.sage_account for row in source.accounts("B")], ["411112", "443170"])
-            self.assertEqual(source.quantity_accounts("B"), frozenset({"443170"}))
-            self.assertEqual(source.quantity_accounts("A"), frozenset())
+            self.assertEqual(source.analytic_rules(),
+                             {"CCE(1)": frozenset({"704310"}), "QTY": frozenset({"443170", "706230"})})
 
     def test_published_file_modified_after_publication_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            for name in ("correspondances_ubw_sage.csv", "codes_taxe.csv", "manifest.json"):
+            for name in ("correspondances_ubw_sage.csv", "codes_taxe.csv", "regles_analytiques_efluid.csv", "manifest.json"):
                 (root / name).write_bytes((ROOT / "transco" / name).read_bytes())
-            settings = {"source": "csv", "accounts": "correspondances_ubw_sage.csv", "taxes": "codes_taxe.csv", "manifest": "manifest.json"}
+            settings = {"source": "csv", "accounts": "correspondances_ubw_sage.csv", "taxes": "codes_taxe.csv",
+                        "analytic_rules": "regles_analytiques_efluid.csv", "manifest": "manifest.json"}
             self.assertIsInstance(open_source(root, {"transco": settings}), CsvTranscoSource)
             with (root / "codes_taxe.csv").open("a", encoding="utf-8") as stream:
                 stream.write("99;001\n")

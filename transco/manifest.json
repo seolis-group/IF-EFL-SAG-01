@@ -1,19 +1,24 @@
 {
     "interface": "PARAMETRAGE",
-    "version": 1,
-    "publie_le": "2026-11-09T14:20:07+00:00",
+    "version": 3,
+    "publie_le": "2026-11-16T18:26:31+00:00",
     "publie_par": "admin",
-    "commentaire": "Paramétrage commun : fusion des correspondances UBW → Sage",
+    "commentaire": "Recette Efluid 16/11 (MGA) : Transco Efluid V1 (11 comptes ajoutés, 36 services modifiés) ; matrice V2 (467520 en CCE(1), 706230 retiré des règles)",
     "fichiers": [
         {
             "nom": "correspondances_ubw_sage.csv",
-            "lignes": 330,
-            "sha256": "9b917e7cb9143cb1af0364ef40dddc0a1c26cc0e9a13e8156d06123110d2624d"
+            "lignes": 341,
+            "sha256": "7f538df3eac7090499af04ec9d6dc424d72899490df2306df46edb02780e0040"
         },
         {
             "nom": "codes_taxe.csv",
             "lignes": 7,
             "sha256": "cf82d188a19f202c22b852ae192f9c28ca37e3995d84dbe534b2eeb642c21d2e"
+        },
+        {
+            "nom": "regles_analytiques_efluid.csv",
+            "lignes": 79,
+            "sha256": "6dcd947cb9d25959e06cfda372a25590b2ed223e8edf22e310804cf0d458a8ee"
         },
         {
             "nom": "fournisseurs.csv",
