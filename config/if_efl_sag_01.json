@@ -119,18 +119,6 @@
     "analytic_transco_required_prefixes": [
       "6",
       "7"
-    ],
-    "treasury_journals": [
-      "RB",
-      "RE",
-      "RF",
-      "RI",
-      "RP",
-      "RV",
-      "RX"
-    ],
-    "treasury_untaxed_codes": [
-      "0"
     ]
   },
   "transco": {

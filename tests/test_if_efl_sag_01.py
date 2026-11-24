@@ -57,8 +57,11 @@ TRANSCO = Transco(
         AccountTransco("704310", "704310", "DCO", "GRD", "9825101", "620", "9301101"),
         AccountTransco("706230", "706230", "DCO", "GRD", "9825101", "620", "9301101"),
         AccountTransco("704850", "", "", "", "", "899", "9365200"),
+        AccountTransco("512200", "512200", "", "", "", "", ""),
+        AccountTransco("445712", "445712", "", "", "", "", ""),
+        AccountTransco("445812", "445812", "", "", "", "", ""),
     ],
-    {"0": "004", "72": "001"},
+    {("0", ""): "004", ("72", ""): "001", ("0", "445712"): "001", ("0", "445710"): "008"},
     {"CCE(1)": frozenset({"467510", "704310", "706230"}), "QTY": frozenset({"443115", "443170", "706230"})},
 )
 
@@ -159,13 +162,33 @@ class TransformTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "règle analytique Efluid inconnue"):
             Transco([], {}, {"CCE(2)": frozenset({"704310"})})
 
-    def test_treasury_lines_have_no_tax_for_code_zero(self) -> None:
+    def test_treasury_lines_code_zero_gives_004(self) -> None:
+        # Comptabilité, 24/11/2026 : le code 0 donne 004 sur tous les journaux, trésorerie comprise.
         output, rejected, _ = run([
             efluid_line(journal="RE", label="Encaissement", account="411110", tax_code="0", direction="-1", amount="-300"),
-            efluid_line(journal="RE", label="Encaissement", account="411110", tax_code="72", direction="1", amount="300"),
+            efluid_line(journal="RE", label="Encaissement", account="512200", tax_code="0", direction="1", amount="300"),
         ])
         self.assertEqual(rejected, [])
-        self.assertEqual([line.split(";")[-1] for line in output if line.startswith("D;")], ["", "001"])
+        self.assertEqual([line.split(";")[-1] for line in output if line.startswith("D;")], ["004", "004"])
+
+    def test_vat_account_has_its_own_tax_code(self) -> None:
+        # Compte de TVA avec une ligne propre (445712 → 001) ; compte sans ligne propre (445812) → code général.
+        output, rejected, _ = run([
+            efluid_line(account="411110", tax_code="0", direction="1", amount="240"),
+            efluid_line(account="706100", ana1="DCO", ana3="GRD", ana5="9825101", tax_code="72", direction="-1", amount="-200"),
+            efluid_line(account="445712", tax_code="0", direction="-1", amount="-30"),
+            efluid_line(account="445812", tax_code="0", direction="-1", amount="-10"),
+        ])
+        self.assertEqual(rejected, [])
+        taxes = [(f[4], f[-1]) for f in (line.split(";") for line in output) if f[0] == "D" and f[2] == "1"]
+        self.assertEqual(taxes, [("411110", "004"), ("706100", "001"), ("445712", "001"), ("445812", "004")])
+
+    def test_tax_lookup_prefers_account_then_falls_back(self) -> None:
+        self.assertEqual(TRANSCO.tax("0", "445710"), "008")
+        self.assertEqual(TRANSCO.tax("0", "411110"), "004")
+        self.assertEqual(TRANSCO.tax("72", "445712"), "001")
+        with self.assertRaisesRegex(ValueError, "code taxe 99 absent"):
+            TRANSCO.tax("99", "411110")
 
     def test_missing_analytic_transco_rejects_whole_piece(self) -> None:
         output, rejected, stats = run([
@@ -278,6 +301,8 @@ class TranscoSourceTests(unittest.TestCase):
         self.assertGreater(len(selia.by_account), 20)
         self.assertNotEqual(geredis.by_account.keys(), selia.by_account.keys())
         self.assertEqual(geredis.tax("72"), "001")
+        self.assertEqual(geredis.tax("0", "445710"), "008")
+        self.assertEqual(geredis.tax("0", "512200"), "004")
         # Règles Efluid communes aux sociétés ; la quantité Acheminement (607152…) n'en fait pas partie.
         self.assertEqual(geredis.quantity_accounts, selia.quantity_accounts)
         self.assertIn("443170", selia.quantity_accounts)

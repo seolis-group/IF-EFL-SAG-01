@@ -32,7 +32,7 @@ QUANTITY_RULE = "QTY"
 class Transco:
     """Tables de transcodification comptes / sections / codes taxe."""
 
-    def __init__(self, accounts: list[AccountTransco], taxes: dict[str, str],
+    def __init__(self, accounts: list[AccountTransco], taxes: dict[tuple[str, str], str],
                  analytic_rules: dict[str, frozenset[str]] | None = None) -> None:
         self.taxes = taxes
         # Règles « RM - Chantier ou QTY » : la zone 8 (ANA2) va en CCE(1) ou en QTY.
@@ -87,12 +87,14 @@ class Transco:
             raise ValueError(f"section service ou compte analytique Sage non renseigné pour le compte {line.account}")
         return service, analytic_account
 
-    def tax(self, code: str) -> str:
+    def tax(self, code: str, sage_account: str = "") -> str:
+        """Code taxe Sage : ligne propre au compte Sage (comptes de TVA), sinon ligne sans compte."""
         if not code:
             return ""
-        if code not in self.taxes:
-            raise ValueError(f"code taxe {code} absent de la transcodification")
-        return self.taxes[code]
+        for key in ((code, sage_account), (code, "")):
+            if key in self.taxes:
+                return self.taxes[key]
+        raise ValueError(f"code taxe {code} absent de la transcodification")
 
 
 def extract(line: str, zone: dict[str, Any]) -> str:
@@ -152,9 +154,8 @@ def to_sage_line(line: EfluidLine, transco: Transco, config: dict[str, Any]) -> 
     except ValueError as error:
         errors.append(str(error))
     try:
-        # Trésorerie : pas de code taxe pour les codes Efluid listés (0), au lieu de leur transcodification.
-        untaxed = line.journal in rules["treasury_journals"] and line.tax_code in rules["treasury_untaxed_codes"]
-        tax = "" if untaxed else transco.tax(line.tax_code)
+        # Tous journaux, trésorerie comprise (comptabilité, 24/11/2026) ; les comptes de TVA ont leur propre code.
+        tax = transco.tax(line.tax_code, account)
     except ValueError as error:
         errors.append(str(error))
     chantier = account in transco.chantier_accounts

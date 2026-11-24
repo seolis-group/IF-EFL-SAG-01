@@ -1,9 +1,9 @@
 {
     "interface": "PARAMETRAGE",
-    "version": 3,
-    "publie_le": "2026-11-16T18:26:31+00:00",
+    "version": 4,
+    "publie_le": "2026-11-24T20:48:49+00:00",
     "publie_par": "admin",
-    "commentaire": "Recette Efluid 16/11 (MGA) : Transco Efluid V1 (11 comptes ajoutés, 36 services modifiés) ; matrice V2 (467520 en CCE(1), 706230 retiré des règles)",
+    "commentaire": "Codes taxe par compte : 0 → 004 sur tous les journaux, codes propres aux comptes de TVA (comptabilité, 24/11)",
     "fichiers": [
         {
             "nom": "correspondances_ubw_sage.csv",
@@ -12,8 +12,8 @@
         },
         {
             "nom": "codes_taxe.csv",
-            "lignes": 7,
-            "sha256": "cf82d188a19f202c22b852ae192f9c28ca37e3995d84dbe534b2eeb642c21d2e"
+            "lignes": 13,
+            "sha256": "d6ba43eaae808a11d1a2c449d8525044161a535b01532c7422eb9ba3f7c5971c"
         },
         {
             "nom": "regles_analytiques_efluid.csv",

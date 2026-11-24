@@ -21,8 +21,9 @@ class TranscoSource(Protocol):
     def accounts(self, societe: str) -> list[AccountTransco]:
         """Correspondances de comptes d'une société."""
 
-    def taxes(self) -> dict[str, str]:
-        """Correspondances code taxe Efluid → code taxe Sage, communes aux sociétés."""
+    def taxes(self) -> dict[tuple[str, str], str]:
+        """Correspondances (code taxe Efluid, compte Sage) → code taxe Sage, communes aux sociétés.
+        Compte vide : code valable pour tous les comptes sans ligne propre."""
 
     def analytic_rules(self) -> dict[str, frozenset[str]]:
         """Comptes Sage par règle analytique Efluid (CCE(1), QTY), communs aux sociétés."""
@@ -34,7 +35,7 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 
 class CsvTranscoSource:
-    """Référentiel CSV publié par l'application TRANSCO-SAGE : correspondances UBW → Sage
+    """Référentiel CSV publié par le portail Atterri'Sage : correspondances UBW → Sage
     communes aux batchs (colonne `societe`), codes taxe et règles analytiques Efluid."""
 
     def __init__(self, accounts_path: Path, taxes_path: Path, rules_path: Path) -> None:
@@ -52,8 +53,9 @@ class CsvTranscoSource:
             if row["societe"] == societe
         ]
 
-    def taxes(self) -> dict[str, str]:
-        return {row["code_efluid"]: row["code_sage"] for row in read_csv(self.taxes_path)}
+    def taxes(self) -> dict[tuple[str, str], str]:
+        # La colonne compte_sage est facultative : un fichier publié avant son ajout reste lisible.
+        return {(row["code_efluid"], row.get("compte_sage", "")): row["code_sage"] for row in read_csv(self.taxes_path)}
 
     def analytic_rules(self) -> dict[str, frozenset[str]]:
         rules: dict[str, set[str]] = {}
